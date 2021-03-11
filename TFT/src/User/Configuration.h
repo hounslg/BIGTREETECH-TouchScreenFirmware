@@ -1,6 +1,6 @@
 #ifndef _CONFIGURATION_H_
 #define _CONFIGURATION_H_
-#define CONFIG_VERSION 20210217
+#define CONFIG_VERSION 20210310
 
 //===========================================================================
 //============================= General Settings ============================
@@ -169,7 +169,7 @@
 #define SPEED_ID {"Sp.", "Fr."}  // (speed, flow rate)
 
 // Axes names displayed in Parameter Settings menu
-#define AXIS_DISPLAY_ID  {"X",  "Y",  "Z",   "E",  "E2"}  // (X, Y, Z, E, E2)
+#define AXIS_DISPLAY_ID  {"X",  "Y",  "Z",   "E0",  "E1"}  // (X, Y, Z, E0, E1)
 
 // Default X & Y speed (mm/min)
 #define SPEED_XY_SLOW   1000
@@ -193,6 +193,14 @@
 #define X_MAX_POS 235
 #define Y_MAX_POS 235
 #define Z_MAX_POS 250
+
+/**
+ * Raised Z height for probing
+ * Z height to raise / drop after homing (G28) before starting to probe a point.
+ *
+ * WARNING: It MUST be negative (e.g. -50mm) for a Delta printer to avoid crashing into the top of the tower.
+ */
+#define PROBING_Z_RAISE 20.0f
 
 // Pause Settings
 #define NOZZLE_PAUSE_RETRACT_LENGTH               15  // (mm)
@@ -419,30 +427,34 @@
 //#define MESH_LEFT_KEYBOARD
 
 //
-// Terminal settings
+// Terminal Keyboard / Numpad settings
 //
 
+// Terminal Keyboard / Numpad theme
+// Uncomment to enable Material theme for keyboard and Numpad
+//#define KEYBOARD_MATERIAL_THEME // Default: disabled
+
 /**
- * Color scheme for the Terminal Keyboard
+ * Color scheme for the Terminal Keyboard / Numpad
  *
  * Options: [0: Default, 1: Invert, 2: High-Contrast]
  *  Default: The keyboard follows system background and border colors.
  *  Invert: The keyboard is drawn with background swapped with border colors.
  *  High-Contrast: Use white and black colors for high contrast.
  */
-#define TERMINAL_KEYBOARD_COLOR_LAYOUT 0  // Default: 0
+#define KEYBOARD_COLOR_LAYOUT 0  // Default: 0
 
 /**
  * QWERTY/QWERTZ keyboard layout
  * Keyboard layout for Terminal Keyboard (Only for TFT70 V3.0).
  *
- * Options: [0: Default:, 1: qwerty, 2: qwertz, 3: azerty]
+ * Options: [0: qwerty, 1: qwertz, 2: azerty]
  *  default: The keyboard has an alphabetically order.
  *  qwerty: The typically keyboard Layout for english.
  *  qwertz: The typically keyboard Layout for german.
  *  azerty: The typically keyboard Layout for french.
  */
-#define TERMINAL_KEYBOARD_LAYOUT 1  // Default: 0
+#define TERMINAL_KEYBOARD_LAYOUT 0  // Default: 0
 
 
 //===========================================================================

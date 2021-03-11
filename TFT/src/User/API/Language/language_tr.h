@@ -51,9 +51,11 @@
     #define STRING_HOTEND_OFFSET          "2. Nozül Mesafesi"
     #define STRING_PROBE_OFFSET           "Prob Offseti"
     #define STRING_LIN_ADVANCE            "Linear Advance"
+    #define STRING_FILAMENT_SETTING       "Filament Diameter"
     #define STRING_CURRENT_SETTING        "Sürücü Akımı (mA)"
     #define STRING_BUMP_SENSITIVITY       "TMC Çarpma Hassasiyeti"
     #define STRING_HYBRID_THRESHOLD       "TMC Hibrit Eşiği"
+    #define STRING_STEALTH_CHOP           "TMC StealthChop"
     #define STRING_PRINT_ACCELERATION     "Baskı İvme"
     #define STRING_RETRACT_ACCELERATION   "Geriçekme İvme"
     #define STRING_TRAVEL_ACCELERATION    "Gezinti İvme"
@@ -342,5 +344,6 @@
     #define STRING_EXT_TEMPLOW            "Ekstruder sıcaklığı minimum\nsıcaklığın altında (%d℃)."
     #define STRING_HEAT_HOTEND            "Ekstruderi %d℃ ye ısıt?"
     #define STRING_Z_ALIGN                "Z Hizala"
+    #define STRING_MACROS                 "Macros"
 
 #endif
