@@ -14,12 +14,12 @@ extern "C" {
 // Config version support
 // change if new elements/keywords are added/removed/changed in the configuration.h Format YYYYMMDD
 // this number should match CONFIG_VERSION in configuration.h
-#define CONFIG_SUPPPORT 20220321
+#define CONFIG_SUPPPORT 20220518
 
 #define FONT_FLASH_SIGN       20210522  // (YYYYMMDD) change if fonts require updating
-#define CONFIG_FLASH_SIGN     20220321  // (YYYYMMDD) change if any keyword(s) in config.ini is added or removed
-#define LANGUAGE_FLASH_SIGN   20220325  // (YYYYMMDD) change if any keyword(s) in language pack is added or removed
-#define ICON_FLASH_SIGN       20211122  // (YYYYMMDD) change if any icon(s) is added or removed
+#define CONFIG_FLASH_SIGN     20220518  // (YYYYMMDD) change if any keyword(s) in config.ini is added or removed
+#define LANGUAGE_FLASH_SIGN   20230209  // (YYYYMMDD) change if any keyword(s) in language pack is added or removed
+#define ICON_FLASH_SIGN       20220712  // (YYYYMMDD) change if any icon(s) is added or removed
 
 #define FONT_CHECK_SIGN       (FONT_FLASH_SIGN + WORD_UNICODE_ADDR + FLASH_SIGN_ADDR)
 #define CONFIG_CHECK_SIGN     (CONFIG_FLASH_SIGN + STRINGS_STORE_ADDR + \
@@ -32,6 +32,7 @@ extern "C" {
 #define MAX_EXT_COUNT         6
 #define MAX_HOTEND_COUNT      6
 #define MAX_HEATER_COUNT      (MAX_HOTEND_COUNT + 2)  // hotends + bed + chamber
+#define MAX_HEATER_PID_COUNT  (MAX_HOTEND_COUNT + 1)  // hotends + bed
 #define MAX_COOLING_FAN_COUNT 6
 #define MAX_CRTL_FAN_COUNT    2
 #define MAX_FAN_COUNT         (MAX_COOLING_FAN_COUNT + MAX_CRTL_FAN_COUNT)
@@ -52,8 +53,9 @@ extern "C" {
 #define DISABLED  0
 #define ENABLED   1
 #define AUTO      2
-#define HIGH      1
 #define LOW       0
+#define HIGH      1
+#define UNDEFINED 3
 
 enum
 {
@@ -165,6 +167,8 @@ typedef enum
 
 typedef struct
 {
+  uint16_t CRC_checksum;
+
   // General Settings
   uint8_t  serial_port[MAX_SERIAL_PORT_COUNT];
   uint8_t  general_settings;  // emulated M600 / emulated M109-M190 / file comment parsing toggles (Bit Values)
@@ -193,6 +197,7 @@ typedef struct
   uint8_t  persistent_info;
   uint8_t  terminal_ack;
   uint8_t  notification_m117;
+  uint8_t  prog_source;
   uint8_t  prog_disp_type;
   uint8_t  layer_disp_type;
 
@@ -364,9 +369,18 @@ extern const uint16_t default_preheat_ext[];
 extern const uint16_t default_preheat_bed[];
 extern const uint8_t default_custom_enabled[];
 
+// Init settings data with default values
 void initSettings(void);
+
+// Save settings to Flash only if CRC does not match
+void saveSettings(void);
+
+// Init machine settings data with default values
 void initMachineSettings(void);
+
+// Setup machine settings
 void setupMachine(FW_TYPE fwType);
+
 float flashUsedPercentage(void);
 void checkflashSign(void);
 bool getFlashSignStatus(int index);

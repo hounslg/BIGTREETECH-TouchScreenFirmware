@@ -22,6 +22,14 @@ extern "C" {
 
 typedef enum
 {
+  PROG_FILE = 0,  // file execution progress ()
+  PROG_RRF,       // progress from RRF ("fraction_printed")
+  PROG_TIME,      // time based progress (elapsed/total)
+  PROG_SLICER,    // progress from slicer (M73)
+} PROG_FROM;
+
+typedef enum
+{
   PAUSE_NORMAL = 0,
   PAUSE_M0,
   PAUSE_EXTERNAL,
@@ -35,6 +43,7 @@ typedef struct
   float length;
   float weight;
   float cost;
+  bool hasFilamentData;
 } PRINT_SUMMARY;
 
 extern PRINT_SUMMARY infoPrintSummary;
@@ -49,10 +58,16 @@ void breakAndContinue(void);
 void resumeAndPurge(void);
 void resumeAndContinue(void);
 
+//
+// commented because NOT externally invoked
+//
+//void abortAndTerminate(void);
+//void loopBreakToCondition(CONDITION_CALLBACK condCallback);
+
 void setPrintExpectedTime(uint32_t expectedTime);
 uint32_t getPrintExpectedTime(void);
 
-void adjustPrintTime(uint32_t osTime);
+void updatePrintTime(uint32_t osTime);
 uint32_t getPrintTime(void);
 
 void setPrintRemainingTime(int32_t remainingTime);  // used for M73 Rxx and M117 Time Left xx
@@ -65,18 +80,26 @@ uint16_t getPrintLayerNumber();
 void setPrintLayerCount(uint16_t layerCount);
 uint16_t getPrintLayerCount();
 
-uint32_t getPrintSize(void);
-uint32_t getPrintCur(void);
+void setPrintProgressSource(PROG_FROM progressSource);
+PROG_FROM getPrintProgressSource(void);
 
-void setPrintProgress(float cur, float size);
-void setPrintProgressPercentage(uint8_t percentage);  // used by M73 Pxx
-void updatePrintProgress(void);
+//
+// used for print based on gcode file
+//
+uint32_t getPrintDataSize(void);
+uint32_t getPrintDataCur(void);
+void setPrintProgressData(float cur, float size);
+
+//
+// used for print based on M73 Pxx or RRF
+//
+void setPrintProgressPercentage(uint8_t percentage);
+
+uint8_t updatePrintProgress(void);
 uint8_t getPrintProgress(void);
 
 void setPrintRunout(bool runout);
 bool getPrintRunout(void);
-
-bool getPrintAborted(void);
 
 //
 // commented because NOT externally invoked
@@ -88,35 +111,36 @@ bool getPrintAborted(void);
 //void preparePrintSummary(void);
 //void sendPrintCodes(uint8_t index);
 
-void printSetUpdateWaiting(bool isWaiting);           // called in interfaceCmd.c
-void updatePrintUsedFilament(void);                   // called in PrintingMenu.c
-void clearInfoPrint(void);                            // called in PrintingMenu.c
+void setPrintUpdateWaiting(bool isWaiting);  // called in interfaceCmd.c
+void updatePrintUsedFilament(void);          // called in PrintingMenu.c
+void clearInfoPrint(void);                   // called in PrintingMenu.c
 
 //
 // commented because NOT externally invoked
 //
-//void printComplete(void);                           // print complete
+//void completePrint(void);                           // complete a print (finalize stats etc.)
 
-// start print originated or handled by remote host
+// start print originated and/or hosted (handled) by remote host
 // (e.g. print started from remote onboard media or hosted by remote host)
-bool printRemoteStart(const char * filename);
+bool startPrintFromRemoteHost(const char * filename);
 
-// start print originated or handled by TFT
-// (e.g. print started from TFT's GUI or hosted by TFT)
-bool printStart(void);                                // it also sends start gcode
+// start print originated and/or hosted (handled) by TFT
+// (e.g. print started from onboard media or hosted by TFT)
+bool startPrint(void);                                // it also sends start gcode
 
-void printEnd(void);                                  // it also sends end gcode
-void printAbort(void);                                // it also sends cancel gcode
-bool printPause(bool isPause, PAUSE_TYPE pauseType);
+void endPrint(void);                                  // it also sends end gcode
+void abortPrint(void);                                // it also sends cancel gcode
+bool pausePrint(bool isPause, PAUSE_TYPE pauseType);
 
-bool isPrinting(void);
-bool isPaused(void);
-bool isTFTPrinting(void);
-bool isHostPrinting(void);
-bool isRemoteHostPrinting(void);
+bool isPrinting(void);                // return "true" in case a print is ongoing
+bool isPaused(void);                  // return "true" in case a print is paused
+bool isAborted(void);                 // return "true" in case a print is aborted/canceled
+bool isPrintingFromTFT(void);         // return "true" in case a print hosted (handled) by TFT is ongoing
+bool isPrintingFromOnboard(void);     // return "true" in case a print hosted (handled) by onboard (Marlin) is ongoing
+bool isPrintingFromRemoteHost(void);  // return "true" in case a print hosted (handled) by remote host is ongoing
 
 //
-// used for print originated or handled by remote host
+// used for print hosted (handled) by onboard (Marlin) or remote host
 // (e.g. print started from (remote) onboard media or hosted by remote host)
 //
 void setPrintAbort(void);
