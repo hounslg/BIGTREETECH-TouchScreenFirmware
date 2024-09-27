@@ -1,7 +1,7 @@
 #ifndef _PIN_TFT35_V3_0_H_  // modify to actual filename !!!
 #define _PIN_TFT35_V3_0_H_  // modify to actual filename !!!
 
-// MCU type (STM32F10x, STM32F2xx, STM32F4xx)
+// MCU type (STM32F10x, STM32F2xx, STM32F4xx, GD32F20x, GD32F30x)
 #ifndef MCU_TYPE
   #define MCU_TYPE
   #include "stm32f2xx.h"
@@ -71,8 +71,8 @@
   #define LCD_DATA_16BIT 1
 #endif
 
-// SERIAL_PORT:   communicating with host (Marlin, RRF etc...)
-// SERIAL_PORT_X: communicating with other controllers (OctoPrint, ESP3D, other UART Touch Screen etc...)
+// SERIAL_PORT:   communicating with host (Marlin, RRF etc.)
+// SERIAL_PORT_X: communicating with other controllers (OctoPrint, ESP3D, other UART Touch Screen etc.)
 #ifndef SERIAL_PORT
   #define SERIAL_PORT   _USART2  // default USART port
   #define SERIAL_PORT_2 _USART1

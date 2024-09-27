@@ -1,14 +1,17 @@
 #include "Move.h"
 #include "includes.h"
 
-#define LOAD_XYZ_LABEL_INDEX(p0, dir0, p1, dir1, axis) do { \
-                                                         moveItems.items[p0].label.index = LABEL_##axis##_##dir0; \
-                                                         moveItems.items[p1].label.index = LABEL_##axis##_##dir1; \
-                                                       } while(0)
-#define X_MOVE_GCODE "G1 X%.2f F%d\n"
-#define Y_MOVE_GCODE "G1 Y%.2f F%d\n"
-#define Z_MOVE_GCODE "G1 Z%.2f F%d\n"
-#define GANTRY_UPDATE_DELAY 500  // 1 seconds is 1000
+#define LOAD_XYZ_LABEL_INDEX(p0, dir0, p1, dir1, axis)       \
+  do                                                         \
+  {                                                          \
+    moveItems.items[p0].label.index = LABEL_##axis##_##dir0; \
+    moveItems.items[p1].label.index = LABEL_##axis##_##dir1; \
+  } while (0)
+
+#define X_MOVE_GCODE        "G0 X%.2f F%d\n"  // X axis gcode
+#define Y_MOVE_GCODE        "G0 Y%.2f F%d\n"  // Y axis gcode
+#define Z_MOVE_GCODE        "G0 Z%.2f F%d\n"  // Z axis gcode
+#define GANTRY_REFRESH_TIME 500               // 1 second is 1000
 
 #ifdef PORTRAIT_MODE
   #define OFFSET 0
@@ -16,42 +19,46 @@
   #define OFFSET 1
 #endif
 
-const char *const xyzMoveCmd[] = {X_MOVE_GCODE, Y_MOVE_GCODE, Z_MOVE_GCODE};
-static uint8_t item_moveLen_index = 1;
-AXIS nowAxis = X_AXIS;
+static const char * const xyzMoveCmd[] = {X_MOVE_GCODE, Y_MOVE_GCODE, Z_MOVE_GCODE};
 
-void storeMoveCmd(const AXIS xyz, const float amount)
+static uint8_t item_moveLen_index = 1;
+static AXIS nowAxis = X_AXIS;
+
+static void storeMoveCmd(const AXIS xyz, const float amount)
 {
   // if invert is true, use 'amount' multiplied by -1
   storeCmd(xyzMoveCmd[xyz], GET_BIT(infoSettings.inverted_axis, xyz) ? -amount : amount,
-           ((xyz != Z_AXIS) ? infoSettings.xy_speed[infoSettings.move_speed] : infoSettings.z_speed[infoSettings.move_speed]));
+           xyz != Z_AXIS ? infoSettings.xy_speed[infoSettings.move_speed] : infoSettings.z_speed[infoSettings.move_speed]);
 
   nowAxis = xyz;  // update now axis
 }
 
-void drawXYZ(void)
+static void drawXYZ(void)
 {
+  if (getReminderStatus() != SYS_STATUS_IDLE || toastRunning()) return;
+
   char tempstr[30];
 
   GUI_SetColor(infoSettings.status_color);
 
   sprintf(tempstr, "X:%.2f  ", coordinateGetAxisActual(X_AXIS));
-  GUI_DispString(START_X + (OFFSET + 0) * SPACE_X + (OFFSET + 0) * ICON_WIDTH, (ICON_START_Y - BYTE_HEIGHT) / 2, (uint8_t *)tempstr);
+  GUI_DispString(START_X + (OFFSET + 0) * SPACE_X + (OFFSET + 0) * ICON_WIDTH, (TITLE_END_Y - BYTE_HEIGHT) / 2, (uint8_t *)tempstr);
 
   sprintf(tempstr, "Y:%.2f  ", coordinateGetAxisActual(Y_AXIS));
-  GUI_DispString(START_X + (OFFSET + 1) * SPACE_X + (OFFSET + 1) * ICON_WIDTH, (ICON_START_Y - BYTE_HEIGHT) / 2, (uint8_t *)tempstr);
+  GUI_DispString(START_X + (OFFSET + 1) * SPACE_X + (OFFSET + 1) * ICON_WIDTH, (TITLE_END_Y - BYTE_HEIGHT) / 2, (uint8_t *)tempstr);
 
   sprintf(tempstr, "Z:%.2f  ", coordinateGetAxisActual(Z_AXIS));
-  GUI_DispString(START_X + (OFFSET + 2) * SPACE_X + (OFFSET + 2) * ICON_WIDTH, (ICON_START_Y - BYTE_HEIGHT) / 2, (uint8_t *)tempstr);
+  GUI_DispString(START_X + (OFFSET + 2) * SPACE_X + (OFFSET + 2) * ICON_WIDTH, (TITLE_END_Y - BYTE_HEIGHT) / 2, (uint8_t *)tempstr);
 
   GUI_SetColor(infoSettings.font_color);
 }
 
-void updateGantry(void)
+static inline void updateGantry(void)
 {
-  if (nextScreenUpdate(GANTRY_UPDATE_DELAY))
+  if (nextScreenUpdate(GANTRY_REFRESH_TIME))
   {
     coordinateQuery(0);  // query position manually for delay less than 1 second
+
     drawXYZ();
   }
 }
@@ -65,20 +72,20 @@ void menuMove(void)
     {
       #ifdef ALTERNATIVE_MOVE_MENU
         {ICON_Z_DEC,                   LABEL_Z_DEC},
-        {ICON_Y_INC,                   LABEL_Y_INC},
+        {ICON_Y_INC,                   LABEL_Y_DEC},
         {ICON_Z_INC,                   LABEL_Z_INC},
         {ICON_01_MM,                   LABEL_01_MM},
         {ICON_X_DEC,                   LABEL_X_DEC},
-        {ICON_Y_DEC,                   LABEL_Y_DEC},
+        {ICON_Y_DEC,                   LABEL_Y_INC},
         {ICON_X_INC,                   LABEL_X_INC},
         {ICON_BACK,                    LABEL_BACK},
       #else
         {ICON_X_INC,                   LABEL_X_INC},
-        {ICON_Y_INC,                   LABEL_Y_INC},
+        {ICON_Y_DEC,                   LABEL_Y_INC},
         {ICON_Z_INC,                   LABEL_Z_INC},
         {ICON_01_MM,                   LABEL_01_MM},
         {ICON_X_DEC,                   LABEL_X_DEC},
-        {ICON_Y_DEC,                   LABEL_Y_DEC},
+        {ICON_Y_INC,                   LABEL_Y_DEC},
         {ICON_Z_DEC,                   LABEL_Z_DEC},
         {ICON_BACK,                    LABEL_BACK},
       #endif
@@ -96,12 +103,12 @@ void menuMove(void)
   uint8_t table[TOTAL_AXIS][2] =
     #ifdef ALTERNATIVE_MOVE_MENU
       /*-------*-------*-------*---------*
-       | Z-(0) | Y+(1) | Z+(2) | unit(3) |
+       | Z-(0) | Y-(1) | Z+(2) | unit(3) |
        *-------*-------*-------*---------*
-       | X-(4) | Y-(5) | X+(6) | back(7) |
+       | X-(4) | Y+(5) | X+(6) | back(7) |
        *-------*-------*-------*---------*
        |X+ X-  |Y+ Y-  |Z+ Z-            */
-      {{6, 4}, {1, 5}, {2, 0}}
+      {{6, 4}, {5, 1}, {2, 0}};
     #else
       /*-------*-------*-------*---------*
        | X+(0) | Y+(1) | Z+(2) | unit(3) |
@@ -109,9 +116,8 @@ void menuMove(void)
        | X-(4) | Y-(5) | Z-(6) | back(7) |
        *-------*-------*-------*---------*
        |X+ X-  |Y+ Y-  |Z+ Z-            */
-      {{0, 4}, {1, 5}, {2, 6}}
+      {{0, 4}, {1, 5}, {2, 6}};
     #endif
-    ;
 
   if (!GET_BIT(infoSettings.inverted_axis, X_AXIS))
     LOAD_XYZ_LABEL_INDEX(table[X_AXIS][0], INC, table[X_AXIS][1], DEC, X);  // table[0] <--> INC(+) table[1] <--> DEC(+) if not inverted
@@ -141,7 +147,7 @@ void menuMove(void)
     {
       #ifdef ALTERNATIVE_MOVE_MENU
         case KEY_ICON_0: storeMoveCmd(Z_AXIS, -amount); break;  // Z move down if no invert
-        case KEY_ICON_1: storeMoveCmd(Y_AXIS, amount); break;   // Y move increase if no invert
+        case KEY_ICON_1: storeMoveCmd(Y_AXIS, -amount); break;  // Y move decrease if no invert
         case KEY_ICON_2: storeMoveCmd(Z_AXIS, amount); break;   // Z move up if no invert
 
         case KEY_ICON_3:
@@ -154,7 +160,7 @@ void menuMove(void)
           break;
 
         case KEY_ICON_4: storeMoveCmd(X_AXIS, -amount); break;  // X move decrease if no invert
-        case KEY_ICON_5: storeMoveCmd(Y_AXIS, -amount); break;  // Y move decrease if no invert
+        case KEY_ICON_5: storeMoveCmd(Y_AXIS, amount); break;   // Y move increase if no invert
         case KEY_ICON_6: storeMoveCmd(X_AXIS, amount); break;   // X move increase if no invert
 
         case KEY_ICON_7: CLOSE_MENU(); break;
@@ -192,6 +198,7 @@ void menuMove(void)
     }
 
     loopProcess();
+
     updateGantry();
   }
 

@@ -1,29 +1,30 @@
 #include "Settings.h"
 #include "includes.h"
 
+static const uint8_t default_serial_port[]  = {SP_1, SP_2, SP_3, SP_4};
+static const uint16_t default_max_temp[]    = MAX_TEMP;
+static const uint16_t default_max_fan[]     = FAN_MAX;
+static const uint16_t default_size_min[]    = {X_MIN_POS, Y_MIN_POS, Z_MIN_POS};
+static const uint16_t default_size_max[]    = {X_MAX_POS, Y_MAX_POS, Z_MAX_POS};
+static const uint16_t default_xy_speed[]    = {SPEED_XY_SLOW, SPEED_XY_NORMAL, SPEED_XY_FAST};
+static const uint16_t default_z_speed[]     = {SPEED_Z_SLOW, SPEED_Z_NORMAL, SPEED_Z_FAST};
+static const uint16_t default_ext_speed[]   = {EXTRUDE_SLOW_SPEED, EXTRUDE_NORMAL_SPEED, EXTRUDE_FAST_SPEED};
+static const uint16_t default_pause_speed[] = {NOZZLE_PAUSE_XY_FEEDRATE, NOZZLE_PAUSE_Z_FEEDRATE, NOZZLE_PAUSE_E_FEEDRATE};
+static const uint16_t default_level_speed[] = {LEVELING_XY_FEEDRATE, LEVELING_Z_FEEDRATE};
+static const uint8_t default_led_color[]    = {LED_R, LED_G, LED_B, LED_W, LED_P, LED_I};
+
 SETTINGS infoSettings;
 MACHINE_SETTINGS infoMachineSettings;
 
-const uint8_t default_serial_port[]    = {SP_1, SP_2, SP_3, SP_4};
-const uint16_t default_max_temp[]      = MAX_TEMP;
-const uint16_t default_max_fan[]       = FAN_MAX;
-const uint16_t default_size_min[]      = {X_MIN_POS, Y_MIN_POS, Z_MIN_POS};
-const uint16_t default_size_max[]      = {X_MAX_POS, Y_MAX_POS, Z_MAX_POS};
-const uint16_t default_xy_speed[]      = {SPEED_XY_SLOW, SPEED_XY_NORMAL, SPEED_XY_FAST};
-const uint16_t default_z_speed[]       = {SPEED_Z_SLOW, SPEED_Z_NORMAL, SPEED_Z_FAST};
-const uint16_t default_ext_speed[]     = {EXTRUDE_SLOW_SPEED, EXTRUDE_NORMAL_SPEED, EXTRUDE_FAST_SPEED};
-const uint16_t default_pause_speed[]   = {NOZZLE_PAUSE_XY_FEEDRATE, NOZZLE_PAUSE_Z_FEEDRATE, NOZZLE_PAUSE_E_FEEDRATE};
-const uint16_t default_level_speed[]   = {LEVELING_XY_FEEDRATE, LEVELING_Z_FEEDRATE};
-const uint16_t default_preheat_ext[]   = PREHEAT_HOTEND;
-const uint16_t default_preheat_bed[]   = PREHEAT_BED;
-const uint8_t default_led_color[]      = {LED_R, LED_G, LED_B, LED_W, LED_P, LED_I};
-const uint8_t default_custom_enabled[] = CUSTOM_GCODE_ENABLED;
-
-// Init settings data with default values
+// init settings data with default values
 void initSettings(void)
 {
 // General Settings
-  infoSettings.general_settings       = ((0 << INDEX_LISTENING_MODE) | (EMULATED_M600 << INDEX_EMULATED_M600) |
+  infoSettings.tx_slots               = TX_SLOTS;
+  infoSettings.general_settings       = ((0 << INDEX_LISTENING_MODE) |
+                                         (ADVANCED_OK << INDEX_ADVANCED_OK) |
+                                         (COMMAND_CHECKSUM << INDEX_COMMAND_CHECKSUM) |
+                                         (EMULATED_M600 << INDEX_EMULATED_M600) |
                                          (EMULATED_M109_M190 << INDEX_EMULATED_M109_M190) |
                                          (EVENT_LED << INDEX_EVENT_LED) |
                                          (FILE_COMMENT_PARSING << INDEX_FILE_COMMENT_PARSING));
@@ -96,7 +97,7 @@ void initSettings(void)
 
   infoSettings.probing_z_offset       = PROBING_Z_OFFSET;
   infoSettings.probing_z_raise        = PROBING_Z_RAISE;
-  infoSettings.z_steppers_alignment   = Z_STEPPER_ALIGNEMENT;
+  infoSettings.z_steppers_alignment   = Z_STEPPERS_ALIGNMENT;
   infoSettings.touchmi_sensor         = TOUCHMI_SENSOR;
 
 // Power Supply Settings (only if connected to TFT controller)
@@ -170,29 +171,29 @@ void initSettings(void)
     infoSettings.pause_feedrate[i]    = default_pause_speed[i];  // XY, Z, E
   }
 
-  for (int i = 0; i < FEEDRATE_COUNT - 1 ; i++)  // xy, z
+  for (int i = 0; i < FEEDRATE_COUNT - 1; i++)  // xy, z
   {
     infoSettings.level_feedrate[i]    = default_level_speed[i];
   }
 
-  for (int i = 0; i < LED_COLOR_COMPONENT_COUNT - 1 ; i++)
+  for (int i = 0; i < LED_COLOR_COMPONENT_COUNT - 1; i++)
   {
     infoSettings.led_color[i]         = default_led_color[i];
   }
 
   resetConfig();
 
-  // Calculate checksum excluding the CRC variable in infoSettings
-  infoSettings.CRC_checksum = calculateCRC16((uint8_t*)&infoSettings + sizeof(infoSettings.CRC_checksum),
-                                                sizeof(infoSettings) - sizeof(infoSettings.CRC_checksum));
+  // calculate checksum excluding the CRC variable in infoSettings
+  infoSettings.CRC_checksum = calculateCRC16((uint8_t *)&infoSettings + sizeof(infoSettings.CRC_checksum),
+                                                 sizeof(infoSettings) - sizeof(infoSettings.CRC_checksum));
 }
 
-// Save settings to Flash only if CRC does not match
+// save settings to Flash only if CRC does not match
 void saveSettings(void)
 {
-  // Calculate checksum excluding the CRC variable in infoSettings
-  uint32_t curCRC = calculateCRC16((uint8_t*)&infoSettings + sizeof(infoSettings.CRC_checksum),
-                                      sizeof(infoSettings) - sizeof(infoSettings.CRC_checksum));
+  // calculate checksum excluding the CRC variable in infoSettings
+  uint32_t curCRC = calculateCRC16((uint8_t *)&infoSettings + sizeof(infoSettings.CRC_checksum),
+                                       sizeof(infoSettings) - sizeof(infoSettings.CRC_checksum));
 
   if (curCRC != infoSettings.CRC_checksum)  // save to Flash only if CRC does not match
   {
@@ -201,6 +202,7 @@ void saveSettings(void)
   }
 }
 
+// init machine settings data with default values
 void initMachineSettings(void)
 {
   // some settings are assumes as active unless reported disabled by marlin
@@ -223,19 +225,13 @@ void initMachineSettings(void)
   infoMachineSettings.babyStepping            = DISABLED;
   infoMachineSettings.buildPercent            = DISABLED;
   infoMachineSettings.softwareEndstops        = ENABLED;
-
-  // reset the state to restart the temperature polling process
-  // needed by parseAck() function to establish the connection
-  heatSetUpdateWaiting(false);
 }
 
+// setup machine settings
 void setupMachine(FW_TYPE fwType)
 {
   if (infoMachineSettings.firmwareType != FW_NOT_DETECTED)  // avoid repeated calls caused by manually sending M115 in terminal menu
     return;
-
-  if (GET_BIT(infoSettings.general_settings, INDEX_LISTENING_MODE) == 1)  // if TFT in listening mode, display a reminder message
-    setReminderMsg(LABEL_LISTENING, SYS_STATUS_LISTENING);
 
   infoMachineSettings.firmwareType = fwType;
 
@@ -288,6 +284,7 @@ void setupMachine(FW_TYPE fwType)
     LED_SendColor(&ledColor);  // set (neopixel) LED light to current color (initialized in HW_Init function)
 }
 
+// get flash used percentage
 float flashUsedPercentage(void)
 {
   uint32_t total = W25Qxx_ReadCapacity();
@@ -312,28 +309,33 @@ void checkflashSign(void)
   if (!statusfont || !statusicon || !statusconfig)
   {
     int ypos = BYTE_HEIGHT + 5;
+
     GUI_Clear(BLACK);
     GUI_DispString(5, 5, (uint8_t *)"Found outdated data:");
 
     ypos += BYTE_HEIGHT;
+
     if (statusfont)
       GUI_DispString(10, ypos, (uint8_t *)"Fonts: OK");
     else
       GUI_DispString(10, ypos, (uint8_t *)"Fonts: Update required");
 
     ypos += BYTE_HEIGHT;
+
     if (statusconfig)
       GUI_DispString(10, ypos, (uint8_t *)"Config: OK");
     else
       GUI_DispString(10, ypos, (uint8_t *)"Config: Update required");
 
     ypos += BYTE_HEIGHT;
+
     if (statuslang)
       GUI_DispString(10, ypos, (uint8_t *)"Language: OK");
     else
       GUI_DispString(10, ypos, (uint8_t *)"Language: Update required(Optional)");
 
     ypos += BYTE_HEIGHT;
+
     if (statusicon)
       GUI_DispString(10, ypos, (uint8_t *)"Icons: OK");
     else
@@ -346,6 +348,7 @@ void checkflashSign(void)
   }
 }
 
+// get sign status from SPI flash
 bool getFlashSignStatus(int index)
 {
   uint32_t flash_sign[sign_count] = {FONT_CHECK_SIGN, CONFIG_CHECK_SIGN, LANGUAGE_CHECK_SIGN, ICON_CHECK_SIGN};
@@ -353,6 +356,7 @@ bool getFlashSignStatus(int index)
   uint32_t addr = FLASH_SIGN_ADDR;
   uint32_t len = sizeof(flash_sign);
 
-  W25Qxx_ReadBuffer((uint8_t*)&cur_flash_sign, addr, len);
+  W25Qxx_ReadBuffer((uint8_t *)&cur_flash_sign, addr, len);
+
   return (flash_sign[index] == cur_flash_sign[index]);
 }

@@ -2,10 +2,10 @@
 
 # BigTreeTech TFT Touchscreen
 
-![GitHub](https://img.shields.io/github/license/bigtreetech/bigtreetech-TouchScreenFirmware.svg)
+<a href="https://github.com/bigtreetech/BIGTREETECH-TouchScreenFirmware/blob/master/LICENSE"><img alt="license" src="https://img.shields.io/github/license/bigtreetech/bigtreetech-TouchScreenFirmware.svg"></a>
 [![GitHub contributors](https://img.shields.io/github/contributors/bigtreetech/bigtreetech-TouchScreenFirmware.svg)](https://github.com/bigtreetech/BIGTREETECH-TouchScreenFirmware/graphs/contributors)
-![GitHub Release Date](https://img.shields.io/github/release-date/bigtreetech/bigtreetech-TouchScreenFirmware.svg)
-[![Build Status](https://github.com/bigtreetech/BIGTREETECH-TouchScreenFirmware/workflows/Build%20Test/badge.svg?branch=master)](https://github.com/bigtreetech/bigtreetech-TouchScreenFirmware/actions)
+<a href="https://github.com/bigtreetech/BIGTREETECH-TouchScreenFirmware/archive/refs/heads/master.zip"><img alt="release date" src="https://img.shields.io/github/last-commit/bigtreetech/BIGTREETECH-TouchScreenFirmware/master.svg?label=release%20date"></a>
+[![Build Binaries](https://github.com/bigtreetech/BIGTREETECH-TouchScreenFirmware/actions/workflows/buildBinary.yml/badge.svg)](https://github.com/bigtreetech/BIGTREETECH-TouchScreenFirmware/actions/workflows/buildBinary.yml)
 
 Important information related to BigTreeTech's TFT touchscreen 3D printer controllers
 
@@ -85,9 +85,14 @@ Only the TFTs listed below are currently supported. Trying to install the firmwa
 **MKS TFT**
 
     MKS_TFT28_V3.0 and V4.0
+    MKS_TFT28_NEW_GENIUS
     MKS_TFT32_V1.3 and V1.4
-    MKS_TFT32L_V3_0
-    MKS_TFT35_V1_0
+    MKS_TFT32L_V3.0
+    MKS_TFT35_V1.0
+
+**MKS GD TFT**
+
+    MKS_GD_TFT28_V1.2-4 (V1.2 and V1.4)
 
 **WARNING:** BTT does not officially provide MKS TFT hardware support. MKS TFT is maintained by open source contributors and BTT does not bear any risk of MKS TFT hardware using this firmware.
 
@@ -144,6 +149,10 @@ the following options must be enabled in Marlin firmware.
 `Options to support dialog with host` (as pre requisite)<br>
 `SET_PROGRESS_MANUALLY` (in Configuration_adv.h)<br>
 `M73_REPORT` (in Configuration_adv.h)<br>
+
+**Options to support ADVANCED_OK with host:**
+
+`ADVANCED_OK` (in Configuration_adv.h)<br>
 
 **Options to support M600 with host & (Un)Load menu:**
 
@@ -245,6 +254,13 @@ For **MKS TFTs**:
 
 1. The firmwares use the naming convention `MKS_TFT*_V*.*.*.x.bin`
 2. Any binary file for an MKS firmware (e.g. `MKS_TFT28_V4.0.27.x.bin`) **MUST** be renamed to `MKSTFT*.bin` (e.g. `MKSTFT28.bin`, `MKSTFT35.bin` etc.) in order it can be recognized and installed by the TFT
+
+For **MKS GD TFTs**:
+
+For MKS TFT28 mounting GD32 MCU (GigaDevice MCU) (like the newest version of Genious Pro), you need to:
+1. Rename the right binary (e.g. `MKS_GD_TFT28_V1_2_4.27.x.bin`) to `MKSTFT28EVO.bin`
+2. Create an empty file named `MKSTFT28.bin`
+3. Create two empty directories named `MKS_FONT` and `MKS_PIC`
 
 For example, for BTT TFT35 V3 select:
 
@@ -443,22 +459,40 @@ Please, see [Customization Guides](https://github.com/bigtreetech/BIGTREETECH-To
   <img src="https://user-images.githubusercontent.com/25599056/56637532-77115000-669e-11e9-809b-f6bc25412f75.png"></li>
 
 <li>After opening the project, edit <a href="platformio.ini"><code>platformio.ini</code></a> and change the <code>default_envs</code> to one that matches your TFT model and version:
-<pre>;BIGTREE_TFT35_V1_0
+<pre>;BIGTREE_TFT24_V1_1
+;BIGTREE_TFT28_V1_0
+;BIGTREE_TFT28_V3_0
+;BIGTREE_TFT35_V1_0
 ;BIGTREE_TFT35_V1_1
 ;BIGTREE_TFT35_V1_2
 ;BIGTREE_TFT35_V2_0
 ;BIGTREE_TFT35_V3_0
 ;BIGTREE_TFT35_E3_V3_0
-;BIGTREE_TFT28_V1_0
-;BIGTREE_TFT28_V3_0
-;BIGTREE_TFT24_V1_1
-;MKS_TFT32_V1_3
-;MKS_TFT32_V1_4
-;MKS_TFT32_V1_4_NOBL
+;BIGTREE_TFT35_B1_V3_0
+;BIGTREE_TFT43_V3_0
+;BIGTREE_TFT50_V3_0
+;BIGTREE_TFT70_V3_0
+
+;BIGTREE_GD_TFT24_V1_1
+;BIGTREE_GD_TFT35_V2_0
+;BIGTREE_GD_TFT35_V3_0
+;BIGTREE_GD_TFT35_E3_V3_0
+;BIGTREE_GD_TFT35_B1_V3_0
+;BIGTREE_GD_TFT43_V3_0
+;BIGTREE_GD_TFT50_V3_0
+;BIGTREE_GD_TFT70_V3_0
+
 ;MKS_TFT28_V3_0
 ;MKS_TFT28_V4_0
 ;MKS_TFT28_NEW_GENIUS
+;MKS_TFT32_V1_3
+;MKS_TFT32_V1_4
+;MKS_TFT32_V1_4_NOBL
+;MKS_TFT32L_V3_0
 ;MKS_TFT35_V1_0
+
+;MKS_GD_TFT28_V1_2_4
+
 [platformio]
 src_dir      = TFT
 boards_dir   = buildroot/boards
@@ -547,6 +581,7 @@ OctoPrint, ESP3D, Pronterface etc, connected to a TFT's serial port, can browse 
 **NOTES:**
 - TFT's media devices, if any, does not need to be initialized/released
 - When present, the G-code's options (e.g. `M27 C`) have the same meaning like in Marlin fw
+- G-code **M300 TFT P0** (with a duration of 0 ms) will mute (with the exception of touch type sound, if enabled) the TFT if not already muted while a duration different than 0 will unmute the TFT if not already unmuted
 
 ### Printing from Remote Host
 

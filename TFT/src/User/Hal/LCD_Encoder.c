@@ -25,13 +25,14 @@ void LCD_Enc_SetActiveSignal(uint8_t status)
 #define B01  1
 #define B10  2
 
+static volatile int8_t encoderDiff;  // updated in LCD_Enc_CheckSteps(), added to encoderPosition at every LCD update
 static uint8_t encoderLastState = 0;
 static uint8_t encoderLastSteps = 0;
-volatile int8_t encoderDiff;  // updated in LCD_Enc_CheckSteps(), added to encoderPosition at every LCD update
-int8_t encoderDirection = 1;
+static int8_t encoderDirection = 1;
+
 int16_t encoderPosition = 0;
 
-bool LCD_Enc_ReadStep(uint16_t io_pin)
+static bool LCD_Enc_ReadStep(uint16_t io_pin)
 {
   return !GPIO_GetLevel(io_pin);
 }
@@ -48,21 +49,23 @@ void LCD_Enc_Init(void)
   encoderLastState = encoderLastSteps = LCD_Enc_ReadPos();
 }
 
-bool LCD_Enc_ReadBtn(uint16_t interval)
+bool LCD_Enc_ReadBtn(uint16_t duration)
 {
-  static uint32_t nowTime = 0;
+  static uint32_t lastTime = 0;
 
-  if (!GPIO_GetLevel(LCD_BTN_PIN))
+  if (GPIO_GetLevel(LCD_BTN_PIN))  // if rotary encoder button not pressed
   {
-    if (OS_GetTimeMs() - nowTime >= interval)
-      return true;
-  }
-  else
-  {
-    nowTime = OS_GetTimeMs();
+    lastTime = OS_GetTimeMs();
+
+    return false;
   }
 
-  return false;
+  if (OS_GetTimeMs() - lastTime < duration)  // if rotary encoder button held pressed but provided duration not yet reached
+    return false;
+
+  // rotary encoder button held pressed for the provided duration
+
+  return true;
 }
 
 uint8_t LCD_Enc_ReadPos(void)
@@ -136,7 +139,7 @@ void LCD_Enc_SendPulse(uint8_t num)
   LCD_Enc_Init();
 }
 
-bool LCD_Enc_CheckState()
+bool LCD_Enc_CheckState(void)
 {
   if (LCD_Enc_ReadBtn(LCD_ENC_BUTTON_INTERVAL) || LCD_Enc_ReadPos() != encoderLastState)
   {
@@ -158,8 +161,12 @@ void LCD_Enc_CheckSteps(void)
   #define encrot3 1
 
   // manage encoder rotation
-  #define ENCODER_SPIN(_E1, _E2) switch (encoderLastSteps) { case _E1: encoderDiff += encoderDirection; break; \
-                                                             case _E2: encoderDiff -= encoderDirection; }
+  #define ENCODER_SPIN(_E1, _E2)                        \
+    switch (encoderLastSteps)                           \
+    {                                                   \
+      case _E1: encoderDiff += encoderDirection; break; \
+      case _E2: encoderDiff -= encoderDirection; break; \
+    }
 
   if (pos != encoderLastSteps)
   {
@@ -190,7 +197,9 @@ KEY_VALUES LCD_Enc_KeyValue(void)
   else
   {
     int16_t encPosTemp = encoderPosition;
+
     encoderPosition = 0;
+
     return (encPosTemp > 0) ? KEY_INCREASE : KEY_DECREASE;
   }
 }

@@ -10,7 +10,7 @@ typedef enum
   UNLOAD_STARTED,
 } CMD_TYPE;
 
-const MENUITEMS loadUnloadItems = {
+static const MENUITEMS loadUnloadItems = {
   // title
   LABEL_LOAD_UNLOAD,
   // icon                          label
@@ -27,7 +27,7 @@ const MENUITEMS loadUnloadItems = {
 };
 
 static uint8_t tool_index = NOZZLE0;
-CMD_TYPE lastCmd = NONE;
+static CMD_TYPE lastCmd = NONE;
 
 void menuLoadUnload(void)
 {
@@ -35,7 +35,7 @@ void menuLoadUnload(void)
 
   if (eAxisBackup.handled == false)
   {
-    loopProcessToCondition(&isNotEmptyCmdQueue);  // wait for the communication to be clean
+    TASK_LOOP_WHILE(isNotEmptyCmdQueue());  // wait for the communication to be clean
 
     eAxisBackup.coordinate = coordinateGetAxis(E_AXIS);
     eAxisBackup.handled = true;
@@ -51,7 +51,7 @@ void menuLoadUnload(void)
     key_num = menuKeyGetValue();
 
     // show reminder for process running if any button is pressed
-    if (infoHost.wait == true && key_num != KEY_IDLE)
+    if (isPendingCmd() && key_num != KEY_IDLE)
     {
       if ((lastCmd == UNLOAD_REQUESTED) || (lastCmd == UNLOAD_STARTED))
       { // unloading in progress
@@ -168,7 +168,7 @@ void menuLoadUnload(void)
     loopProcess();
   }
 
-  if (eAxisBackup.handled == false)  // the user exited from menu (not any other process/popup/etc)
+  if (eAxisBackup.handled == false)                       // the user exited from menu (not any other process/popup/etc)
     mustStoreCmd("G92 E%.5f\n", eAxisBackup.coordinate);  // reset E axis position in Marlin to pre - load/unload state
 
   // set slow update time if not waiting for target temperature

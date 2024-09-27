@@ -3,8 +3,8 @@
 
 //#define ENABLE_PID_STATUS_UPDATE_NOTIFICATION
 
-const char *const pidCmdMarlin[] = PID_CMD_MARLIN;
-const char *const pidCmdRRF[] = PID_CMD_RRF;
+static const char * const pidCmdMarlin[] = PID_CMD_MARLIN;
+static const char * const pidCmdRRF[]    = PID_CMD_RRF;
 
 static int16_t pidHeaterTarget[MAX_HEATER_PID_COUNT] = {0};
 static uint8_t curTool_index = NOZZLE0;
@@ -21,7 +21,7 @@ void pidUpdateStatus(PID_STATUS status)
   pidStatus = status;
 }
 
-uint8_t checkFirstValidPID(void)
+static uint8_t checkFirstValidPID(void)
 {
   uint8_t tool = 0;
 
@@ -36,13 +36,14 @@ uint8_t checkFirstValidPID(void)
   return tool;
 }
 
-void pidRun(void)
+static void pidRun(void)
 {
   uint8_t tool = checkFirstValidPID();
 
   if (tool < MAX_HEATER_PID_COUNT)
   {
-    mustStoreCmd("%s S%d\n", (infoMachineSettings.firmwareType == FW_REPRAPFW) ? pidCmdRRF[tool] : pidCmdMarlin[tool], (int)pidHeaterTarget[tool]);  // start PID autotune
+    mustStoreCmd("%s S%d\n", (infoMachineSettings.firmwareType != FW_REPRAPFW) ? pidCmdMarlin[tool] : pidCmdRRF[tool], (int)pidHeaterTarget[tool]);  // start PID autotune
+
     pidStatus = PID_RUNNING;
   }
 }
@@ -57,15 +58,18 @@ static inline void pidStart(void)
   pidRun();
 }
 
-void pidResultAction(void)
+static inline void pidResultAction(void)
 {
   if (pidStatus == PID_TIMEOUT)
   {
     memset(pidHeaterTarget, 0, sizeof(pidHeaterTarget));  // reset pidHeaterTarget[] to 0
 
     LABELCHAR(tempMsg, LABEL_TIMEOUT_REACHED);
-    sprintf(&tempMsg[strlen(tempMsg)], "\n %s", textSelect(LABEL_BUSY));
+
+    sprintf(strchr(tempMsg, '\0'), "\n %s", textSelect(LABEL_BUSY));
+
     BUZZER_PLAY(SOUND_NOTIFY);
+
     popupReminder(DIALOG_TYPE_ALERT, LABEL_PID_TITLE, (uint8_t *) tempMsg);
   }
   else if (pidStatus == PID_FAILED)
@@ -73,6 +77,7 @@ void pidResultAction(void)
     memset(pidHeaterTarget, 0, sizeof(pidHeaterTarget));  // reset pidHeaterTarget[] to 0
 
     BUZZER_PLAY(SOUND_ERROR);
+
     popupReminder(DIALOG_TYPE_ERROR, LABEL_PID_TITLE, LABEL_PROCESS_ABORTED);
   }
   else if (pidStatus == PID_SUCCESS)
@@ -87,7 +92,7 @@ void pidResultAction(void)
 
       if (infoMachineSettings.EEPROM == 1)
       {
-        sprintf(&tempMsg[strlen(tempMsg)], "\n %s", textSelect(LABEL_EEPROM_SAVE_INFO));
+        sprintf(strchr(tempMsg, '\0'), "\n %s", textSelect(LABEL_EEPROM_SAVE_INFO));
 
         popupDialog(DIALOG_TYPE_SUCCESS, LABEL_PID_TITLE, (uint8_t *) tempMsg, LABEL_CONFIRM, LABEL_CANCEL, saveEepromSettings, NULL, NULL);
       }
@@ -101,8 +106,10 @@ void pidResultAction(void)
       #ifdef ENABLE_PID_STATUS_UPDATE_NOTIFICATION
         LABELCHAR(tempMsg, LABEL_PID_TITLE);
 
-        sprintf(&tempMsg[strlen(tempMsg)], " %s", textSelect(LABEL_PROCESS_COMPLETED));
+        sprintf(strchr(tempMsg, '\0'), " %s", textSelect(LABEL_PROCESS_COMPLETED));
+
         BUZZER_PLAY(SOUND_NOTIFY);
+
         addToast(DIALOG_TYPE_INFO, tempMsg);
       #endif
 
@@ -235,7 +242,7 @@ void menuPid(void)
       if (getMenuType() != MENU_TYPE_SPLASH)
         popupSplash(DIALOG_TYPE_INFO, LABEL_SCREEN_INFO, LABEL_BUSY);
 
-      if (OS_GetTimeMs() > pidTimeout)
+      if (OS_GetTimeMs() >= pidTimeout)
         pidUpdateStatus(PID_TIMEOUT);
 
       if (pidStatus != PID_RUNNING)

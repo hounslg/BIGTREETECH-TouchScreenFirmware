@@ -2,11 +2,11 @@
 #include "includes.h"
 #include "RRFM20Parser.hpp"
 
-static const char *running_macro_name;
-extern const GUI_RECT titleRect;
+static const char * running_macro_name;
+static const GUI_RECT titleRect;
 
-// Scan files in RRF
-void scanInfoFilesFs(void)
+// scan files in RRF
+static void scanInfoFilesFs(void)
 {
   clearInfoFile();
   request_M20_rrf(infoFile.path, false, parseMacroListResponse);
@@ -21,9 +21,10 @@ void rrfShowRunningMacro(void)
   GUI_DispStringInRect(0, 0, LCD_WIDTH, LCD_HEIGHT, (uint8_t *)running_macro_name);
 }
 
-void runMacro(const char *display_name)
+static inline void runMacro(const char *display_name)
 {
   running_macro_name = display_name;
+
   rrfShowRunningMacro();
 
   request_M98(infoFile.path);
@@ -31,9 +32,9 @@ void runMacro(const char *display_name)
   exitFolder();
 }
 
-// Draw Macro file list
-// update items in list mode
-void macroListDraw(LISTITEM * item, uint16_t index, uint8_t itemPos)
+// draw Macro file list.
+// Update items in list mode
+static void macroListDraw(LISTITEM * item, uint16_t index, uint8_t itemPos)
 {
   if (index < infoFile.folderCount)
   {
@@ -55,11 +56,12 @@ void macroListDraw(LISTITEM * item, uint16_t index, uint8_t itemPos)
   }
 }
 
-// View and run macros stored in RRF firmware
+// view and run macros stored in RRF firmware
 void menuCallMacro(void)
 {
   uint16_t key_num = KEY_IDLE;
   uint8_t update = 1;
+
   infoFile.curPage = 0;
   infoFile.source = FS_ONBOARD_MEDIA;
 
@@ -80,11 +82,12 @@ void menuCallMacro(void)
     {
       case KEY_BACK:
         infoFile.curPage = 0;
+
         if (isRootFolder() == true)
         {
           clearInfoFile();
+
           CLOSE_MENU();
-          break;
         }
         else
         {
@@ -104,13 +107,14 @@ void menuCallMacro(void)
           {
             if (enterFolder(infoFile.folder[key_num]) == false)
               break;
+
             scanInfoFilesFs();
             update = 1;
             infoFile.curPage = 0;
           }
           else if (key_num < infoFile.fileCount + infoFile.folderCount)  // gcode
           {
-            if (infoHost.connected != true)
+            if (infoHost.connected == false)
               break;
 
             if (enterFolder(infoFile.longFile[key_num - infoFile.folderCount]) == false)

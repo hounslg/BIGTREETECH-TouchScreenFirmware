@@ -7,8 +7,8 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "variants.h"  // for RAPID_SERIAL_COMM
-#include "main.h"      // for HOST_STATUS
+#include "variants.h"               // for RAPID_SERIAL_COMM
+#include "Mainboard_FlowControl.h"  // for HOST_STATUS
 
 #ifdef RAPID_SERIAL_COMM
   #define RAPID_SERIAL_LOOP() loopBackEnd()
@@ -62,23 +62,23 @@ void resumeAndContinue(void);
 // commented because NOT externally invoked
 //
 //void abortAndTerminate(void);
-//void loopBreakToCondition(CONDITION_CALLBACK condCallback);
+//void waitForAbort(void);
 
 void setPrintExpectedTime(uint32_t expectedTime);
 uint32_t getPrintExpectedTime(void);
 
-void updatePrintTime(uint32_t osTime);
+void updatePrintTime(void);  // WARNING, TIMER INTERRUPT ROUTINE CALLED ONCE A SECOND
 uint32_t getPrintTime(void);
 
 void setPrintRemainingTime(int32_t remainingTime);  // used for M73 Rxx and M117 Time Left xx
 void parsePrintRemainingTime(char * buffer);        // used for M117 Time Left xx
-uint32_t getPrintRemainingTime();
+uint32_t getPrintRemainingTime(void);
 
 void setPrintLayerNumber(uint16_t layerNumber);
-uint16_t getPrintLayerNumber();
+uint16_t getPrintLayerNumber(void);
 
 void setPrintLayerCount(uint16_t layerCount);
-uint16_t getPrintLayerCount();
+uint16_t getPrintLayerCount(void);
 
 void setPrintProgressSource(PROG_FROM progressSource);
 PROG_FROM getPrintProgressSource(void);
@@ -111,9 +111,8 @@ bool getPrintRunout(void);
 //void preparePrintSummary(void);
 //void sendPrintCodes(uint8_t index);
 
-void setPrintUpdateWaiting(bool isWaiting);  // called in interfaceCmd.c
-void updatePrintUsedFilament(void);          // called in PrintingMenu.c
-void clearInfoPrint(void);                   // called in PrintingMenu.c
+void updatePrintUsedFilament(void);  // called in PrintingMenu.c
+void clearInfoPrint(void);           // called in PrintingMenu.c
 
 //
 // commented because NOT externally invoked
@@ -147,8 +146,11 @@ void setPrintAbort(void);
 void setPrintPause(HOST_STATUS hostStatus, PAUSE_TYPE pauseType);
 void setPrintResume(HOST_STATUS hostStatus);
 
-void loopPrintFromTFT(void);      // called in loopBackEnd(). It handles a print from TFT media, if any
-void loopPrintFromOnboard(void);  // called in loopBackEnd(). It handles a print from (remote) onboard media, if any
+void loopPrintFromTFT(void);          // called in loopBackEnd(). It handles a print from TFT media, if any
+
+void printSetNextUpdateTime(void);    // called in parseAck(). Set next printing query time or timeout
+void printClearSendingWaiting(void);  // called in sendQueueCmd(). Clear sending waiting for printing query
+void loopPrintFromOnboard(void);      // called in loopBackEnd(). It handles a print from (remote) onboard media, if any
 
 #ifdef __cplusplus
 }

@@ -1,8 +1,6 @@
 #include "CaseLight.h"
 #include "includes.h"
 
-#define CASE_LIGHT_UPDATE_TIME 1000  // 1 seconds is 1000
-
 static uint8_t caseLightPercent = 0;
 static bool caseLightState;
 
@@ -12,7 +10,7 @@ static void updateCaseLightIcon(MENUITEMS * curmenu, const bool state)
   curmenu->items[KEY_ICON_5].label.index = state ? LABEL_ON : LABEL_OFF;
 }
 
-void caseLightPercentReDraw(void)
+static void caseLightPercentReDraw(void)
 {
   char tempstr[20];
 
@@ -52,10 +50,11 @@ void menuCaseLight(void)
     }
   };
 
+  static uint8_t percent_index = 1;
+
   KEY_VALUES key_num = KEY_IDLE;
   uint8_t requestedCLpercent = caseLightPercent;
   uint8_t requestedCLstate = caseLightState;
-  static uint8_t percent_index = 1;
 
   enum
   {
@@ -87,16 +86,16 @@ void menuCaseLight(void)
       case KEY_ICON_3:
       case KEY_INCREASE:
         requestedCLpercent = (key_num == KEY_ICON_3 || key_num == KEY_INCREASE) ?
-                            NOBEYOND(0, requestedCLpercent + percentSteps[percent_index], 100) :
-                            NOBEYOND(0, requestedCLpercent - percentSteps[percent_index], 100);
+                             NOBEYOND(0, requestedCLpercent + percentSteps[percent_index], 100) :
+                             NOBEYOND(0, requestedCLpercent - percentSteps[percent_index], 100);
         sendingNeeded |= DO_SEND_PERCENT;
         break;
 
       // change unit
       case KEY_ICON_4:
         percent_index = (percent_index + 1) % ITEM_PERCENT_STEPS_NUM;
-
         caseLightItems.items[key_num] = itemPercent[percent_index];
+
         menuDrawItem(&caseLightItems.items[key_num], key_num);
         break;
 
@@ -132,6 +131,7 @@ void menuCaseLight(void)
         requestedCLstate = caseLightState;
 
       updateCaseLightIcon(&caseLightItems, caseLightState);
+
       menuDrawItem(&caseLightItems.items[KEY_ICON_5], KEY_ICON_5);
     }
 

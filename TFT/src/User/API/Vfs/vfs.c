@@ -1,6 +1,9 @@
 #include "vfs.h"
 #include "includes.h"
 
+static bool volumeSrcStatus[FF_VOLUMES]             = {false, false};  // volume exist detect
+static uint8_t (* volumeInserted[FF_VOLUMES])(void) = {SD_CD_Inserted, USBH_USR_Inserted};
+
 MYFILE infoFile = {FS_TFT_SD, BOARD_SD, "?:", {0}, {0}, {0}, {0}, 0, 0, 0, 0, false};
 
 void setPrintModelIcon(bool exist)
@@ -26,7 +29,7 @@ TCHAR * getFS(void)
 
     case FS_ONBOARD_MEDIA:
     case FS_ONBOARD_MEDIA_REMOTE:
-      return infoMachineSettings.firmwareType == FW_REPRAPFW ? "gcodes" : "oMD:";
+      return infoMachineSettings.firmwareType != FW_REPRAPFW ? "oMD:" : "gcodes";
 
     case FS_REMOTE_HOST:
       return "Remote printing...";
@@ -123,7 +126,7 @@ void resetInfoFile(void)
 }
 
 // skip path information, if any
-char * getPathTail(void)
+static char * getPathTail(void)
 {
   // examples:
   //
@@ -175,14 +178,11 @@ bool isRootFolder(void)
 }
 
 // check if filename provides a supported filename extension
-char * isSupportedFile(const char * filename)
+static char * isSupportedFile(const char * filename)
 {
   char * extPos = strrchr(filename, '.');  // check last "." in the name where extension is supposed to start
 
-  if (extPos != NULL && extPos[1] != 'g' && extPos[1] != 'G')
-    extPos = NULL;
-
-  return extPos;
+  return (extPos != NULL && (extPos[1] == 'g' || extPos[1] == 'G')) ? extPos : NULL;
 }
 
 // add a file name or folder name to file list
@@ -261,7 +261,7 @@ bool addFile(bool isFile, const char * shortName, const char * longName)
 }
 
 // return the long folder name if exists, otherwise the short one
-char * getFoldername(uint8_t index)
+const char * getFoldername(uint8_t index)
 {
   if (infoFile.longFolder[index] != NULL)
     return infoFile.longFolder[index];
@@ -270,7 +270,7 @@ char * getFoldername(uint8_t index)
 }
 
 // return the long file name if exists, otherwise the short one
-char * getFilename(uint8_t index)
+const char * getFilename(uint8_t index)
 {
   if (infoFile.longFile[index] != NULL)
     return infoFile.longFile[index];
@@ -278,60 +278,50 @@ char * getFilename(uint8_t index)
     return infoFile.file[index];
 }
 
-char * hideExtension(char * filename)
+static const char * hideExtension(const char * filename)
 {
-  if (infoSettings.filename_extension == 0)  // if filename extension is disabled
+  // if filename extension feature is disabled and extension is not already hidden
+  if (infoSettings.filename_extension == 0 && strchr(filename, '\0')[1] == '\0')
   {
     char * extPos = isSupportedFile(filename);
 
-    // if filename provides a supported filename extension then
-    // check extra byte for filename extension check. If 0, no filename extension was previously hidden
-    if (extPos != NULL && filename[strlen(filename) + 1] == '\0')
-      filename[extPos - filename] = 0;  // temporary hide filename extension
+    // if filename provides a supported filename extension
+    if (extPos != NULL)
+      *extPos = '\0';  // temporary hide filename extension
   }
 
   return filename;
 }
 
-char * restoreExtension(char * filename)
+static const char * restoreExtension(const char * filename)
 {
-  if (infoSettings.filename_extension == 0)  // if filename extension is disabled
+  if (infoSettings.filename_extension == 0)  // if filename extension feature is disabled
   {
+    char * extPos = strchr(filename, '\0');
+
     // check extra byte for filename extension check. If 0, no filename extension was previously hidden
-    if (filename[strlen(filename) + 1] != '\0')
-      filename[strlen(filename)] = '.';  // restore filename extension
+    if (extPos[1] != '\0')
+      *extPos = '.';  // restore filename extension
   }
 
   return filename;
 }
 
-// hide the extension of the file name and return a pointer to that file name
-// (the long one if exists, otherwise the short one).
+// hide the extension of the file name and return a pointer to that file name (the long one if exists, otherwise the short one).
 // The hide of the extension is not temporary so do not forget to restore it afterwards!
-char * hideFilenameExtension(uint8_t index)
+const char * hideFilenameExtension(uint8_t index)
 {
-  char * filename = hideExtension(infoFile.file[index]);
-
-  if (infoFile.longFile[index] != NULL)
-    filename = hideExtension(infoFile.longFile[index]);
-
-  return filename;
+  return hideExtension(infoFile.longFile[index] != NULL ? infoFile.longFile[index] : infoFile.file[index]);
 }
 
-// restore the extension of the file name and return a pointer to that file name
-// (the long one if exists, otherwise the short one)
-char * restoreFilenameExtension(uint8_t index)
+// restore the extension of the file name and return a pointer to that file name (the long one if exists, otherwise the short one)
+const char * restoreFilenameExtension(uint8_t index)
 {
-  char * filename = restoreExtension(infoFile.file[index]);
-
-  if (infoFile.longFile[index] != NULL)
-    filename = restoreExtension(infoFile.longFile[index]);
-
-  return filename;
+  return restoreExtension(infoFile.longFile[index] != NULL ? infoFile.longFile[index] : infoFile.file[index]);
 }
 
 // get print filename according to print originator (remote or local to TFT)
-char * getPrintFilename(void)
+const char * getPrintFilename(void)
 {
   // if restoring a print after a power failure or printing from remote host, remote onboard media or remote TFT media (with M23 - M24),
   // no filename is available in infoFile. Only infoFile.source and infoFile.path have been set
@@ -347,7 +337,7 @@ bool getPrintTitle(char * buf, uint8_t len)
 {
   // example: "SD:/test/cap2.gcode" -> "SD:cap2.gcode"
 
-  char * strPtr = getPrintFilename();
+  const char * strPtr = getPrintFilename();
 
   // "+ 2": space for terminating null character and the flag for filename extension check
   if (strlen(getFS()) + strlen(strPtr) + 2 > len)
@@ -364,9 +354,6 @@ bool getPrintTitle(char * buf, uint8_t len)
   return true;
 }
 
-// volume exist detect
-static bool volumeSrcStatus[FF_VOLUMES] = {false, false};
-
 bool volumeExists(uint8_t src)
 {
   if (src >= FF_VOLUMES)
@@ -374,8 +361,6 @@ bool volumeExists(uint8_t src)
 
   return volumeSrcStatus[src];
 }
-
-uint8_t (* volumeInserted[FF_VOLUMES])(void) = {SD_CD_Inserted, USBH_USR_Inserted};
 
 void loopVolumeSource(void)
 {
