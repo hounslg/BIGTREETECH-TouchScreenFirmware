@@ -36,8 +36,8 @@
  *                P4: [min: 0, max: 11]
  *   Options: [OFF (port disabled): 0, 2400: 1, 9600: 2, 19200: 3, 38400: 4, 57600: 5, 115200: 6, 230400: 7, 250000: 8, 500000: 9, 921600: 10, 1000000: 11]
  */
-#define SP_1 6  // Default: 6
-#define SP_2 0  // Default: 0
+#define SP_1 7  // Default: 6
+#define SP_2 7  // Default: 0
 #define SP_3 0  // Default: 0
 #define SP_4 0  // Default: 0
 
@@ -83,7 +83,7 @@
  *
  *   Options: [disable: 0, enable: 1]
  */
-#define ADVANCED_OK 0  // Default: 0
+#define ADVANCED_OK 1  // Default: 0
 
 /**
  * Command Checksum
@@ -127,7 +127,7 @@
  *
  *   Options: [disable: 0, enable: 1]
  */
-#define EMULATED_M600 1  // Default: 1
+#define EMULATED_M600 0  // Default: 1
 
 /**
  * Emulated M109 And M190
@@ -418,7 +418,7 @@
  *
  *   Options: [disable: 0, enable: 1]
  */
-#define MARLIN_FULLSCREEN 0  // Default: 0
+#define MARLIN_FULLSCREEN 1  // Default: 0
 
 /**
  * Show Marlin Mode Title
